@@ -26,3 +26,11 @@ Object.defineProperties(globalThis, {
   Request: { value: Request },
   Response: { value: Response },
 })
+
+const { ReadableStream, WritableStream, TransformStream } = require('web-streams-polyfill');
+
+Object.defineProperties(globalThis, {
+  ReadableStream: { value: ReadableStream },
+  WritableStream: { value: WritableStream },
+  TransformStream: { value: TransformStream },
+})
