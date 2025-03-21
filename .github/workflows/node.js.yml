@@ -30,5 +30,16 @@ jobs:
         cache: 'npm'
         cache-dependency-path: '**/package-lock.json'
     - run: npm ci
+
+    # Debugging Step: Print Node.js and Installed Packages
+    - name: Debug Node.js and Dependencies
+      run: |
+        node -v
+        npm list undici web-streams-polyfill
+    # Debugging Step: Check if ReadableStream exists
+    - name: Check Global ReadableStream
+      run: node -e "console.log('ReadableStream exists:', typeof global.ReadableStream !== 'undefined')"
+
+
     - run: NODE_OPTIONS=--max_old_space_size=8192 npm run build --if-present
     - run: npm run test --if-present
