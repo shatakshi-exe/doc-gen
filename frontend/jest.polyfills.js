@@ -16,6 +16,13 @@ Object.defineProperties(globalThis, {
   TransformStream: { value: TransformStream },
 })
 
+const { MessageChannel } = require('worker_threads');
+
+Object.defineProperties(globalThis, {
+  MessageChannel: { value: MessageChannel },
+  MessagePort: { value: MessageChannel.prototype.port1.constructor },
+});
+
 const { TextDecoder, TextEncoder } = require('node:util')
 
 Object.defineProperties(globalThis, {
