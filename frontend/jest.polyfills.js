@@ -8,6 +8,13 @@
  * you don't want to deal with this.
  */
 
+const { MessageChannel } = require('worker_threads');
+
+Object.defineProperties(globalThis, {
+  MessageChannel: { value: MessageChannel },
+  MessagePort: { value: MessageChannel.prototype.port1.constructor },
+})
+
 const { ReadableStream, WritableStream, TransformStream } = require('web-streams-polyfill');
 
 Object.defineProperties(globalThis, {
@@ -15,13 +22,6 @@ Object.defineProperties(globalThis, {
   WritableStream: { value: WritableStream },
   TransformStream: { value: TransformStream },
 })
-
-const { MessageChannel } = require('worker_threads');
-
-Object.defineProperties(globalThis, {
-  MessageChannel: { value: MessageChannel },
-  MessagePort: { value: MessageChannel.prototype.port1.constructor },
-});
 
 const { TextDecoder, TextEncoder } = require('node:util')
 
