@@ -8,6 +8,14 @@
  * you don't want to deal with this.
  */
 
+const { ReadableStream, WritableStream, TransformStream } = require('web-streams-polyfill');
+
+Object.defineProperties(globalThis, {
+  ReadableStream: { value: ReadableStream },
+  WritableStream: { value: WritableStream },
+  TransformStream: { value: TransformStream },
+})
+
 const { TextDecoder, TextEncoder } = require('node:util')
 
 Object.defineProperties(globalThis, {
@@ -25,12 +33,4 @@ Object.defineProperties(globalThis, {
   FormData: { value: FormData },
   Request: { value: Request },
   Response: { value: Response },
-})
-
-const { ReadableStream, WritableStream, TransformStream } = require('web-streams-polyfill');
-
-Object.defineProperties(globalThis, {
-  ReadableStream: { value: ReadableStream },
-  WritableStream: { value: WritableStream },
-  TransformStream: { value: TransformStream },
 })
