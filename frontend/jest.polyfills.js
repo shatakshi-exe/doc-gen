@@ -15,12 +15,12 @@ Object.defineProperties(globalThis, {
   MessagePort: { value: MessageChannel.prototype.port1.constructor },
 })
 
-const streams = require('web-streams-polyfill/ponyfill'); 
+const { ReadableStream, WritableStream, TransformStream } = require('web-streams-polyfill');
 
 Object.defineProperties(globalThis, {
-  ReadableStream: { value: streams.ReadableStream },
-  WritableStream: { value: streams.WritableStream },
-  TransformStream: { value: streams.TransformStream },
+  ReadableStream: { value: ReadableStream },
+  WritableStream: { value: WritableStream },
+  TransformStream: { value: TransformStream },
 });
 
 const { TextDecoder, TextEncoder } = require('node:util')
