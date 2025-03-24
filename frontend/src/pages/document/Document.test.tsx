@@ -29,19 +29,32 @@ describe('Document Component', () => {
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
 
+  // test('renders document content when fetched successfully', async () => {
+  //   (useParams as jest.Mock).mockReturnValue({ id: '1' });
+  //   (documentRead as jest.Mock).mockResolvedValue({
+  //     json: jest.fn().mockResolvedValue(mockDocumentData),
+  //   });
+
+  //   render(<Document />);
+
+  //   await waitFor(() => {
+  //     expect(screen.getByText(mockDocumentData.full_content)).toBeInTheDocument();
+  //   });
+  // });
+
   test('renders document content when fetched successfully', async () => {
     (useParams as jest.Mock).mockReturnValue({ id: '1' });
     (documentRead as jest.Mock).mockResolvedValue({
       json: jest.fn().mockResolvedValue(mockDocumentData),
     });
-
+  
     render(<Document />);
-
+  
     await waitFor(() => {
-      expect(screen.getByText(mockDocumentData.full_content)).toBeInTheDocument();
+      expect(screen.getByText(mockDocumentData.content)).toBeInTheDocument(); // Use `content`
     });
   });
-
+  
   test('renders error message when document is not found', async () => {
     (useParams as jest.Mock).mockReturnValue({ id: '1' });
     (documentRead as jest.Mock).mockRejectedValue(new Error('Document not found'));
