@@ -75,7 +75,7 @@ gpt-4o, gpt-4o-mini, text-embedding-ada-002, gpt-3.5-turbo, gpt-4
     chmod +x quota_check_all_regions.sh
     ./quota_check_all_regions.sh
     ```
-    - Refer to [Usage Examples](#usage-examples) for detailed commands.
+    - Refer to [Usage Examples](#usage-examples-1) for detailed commands.
     
 ## **If using VS Code or Codespaces**
 1. Open the terminal in VS Code or Codespaces.  
@@ -97,6 +97,7 @@ gpt-4o, gpt-4o-mini, text-embedding-ada-002, gpt-3.5-turbo, gpt-4
     ```sh
     ./quota_check_all_regions.sh
     ```
+     - Refer to [Usage Examples](#usage-examples-1) for detailed commands.
 4. If you see the error `_bash: az: command not found_`, install Azure CLI:  
 
     ```sh
