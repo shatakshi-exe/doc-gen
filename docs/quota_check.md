@@ -30,8 +30,12 @@ Use one of the following scripts based on your needs:
     ```
     
 ## **If using VS Code or Codespaces**
-
-1. Run the appropriate script based on your requirement:  
+1. Open the terminal in VS Code or Codespaces.  
+2. Navigate to the `scripts` folder where the script files are located:
+   ```sh
+    cd scripts
+    ```
+3. Run the appropriate script based on your requirement:  
 
    **To check quota for a specific model and capacity:**  
 
@@ -44,13 +48,13 @@ Use one of the following scripts based on your needs:
     ```sh
     ./quota_check_all_regions.sh
     ```
-2. If you see the error `_bash: az: command not found_`, install Azure CLI:  
+4. If you see the error `_bash: az: command not found_`, install Azure CLI:  
 
     ```sh
     curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
     az login
     ```
-3. Rerun the script after installing Azure CLI.
+5. Rerun the script after installing Azure CLI.
    
     **Parameters**
     - `<model_name:capacity>`: The name and required capacity for each model, in the format model_name:capacity (**e.g., gpt-4o-mini:30,text-embedding-ada-002:20**).
