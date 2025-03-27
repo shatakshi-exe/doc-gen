@@ -38,6 +38,8 @@ gpt-4o-mini:30,text-embedding-ada-002:20
   ./quota_check_params.sh gpt-4o-mini:30 eastus
   ```
 #### **Sample Output**
+The final table lists regions with available quota for both GPT and text embedding models. You can select any of these regions for deployment.
+
 ![quota_check_params_output](images/quota_check_params_output.png)
 
 ### **2️⃣ `quota_check_all_regions.sh` - Check Across All Azure Regions**
@@ -46,7 +48,7 @@ gpt-4o-mini:30,text-embedding-ada-002:20
 ✔️ It checks quota for the following default models:
 
 ```sh
-gpt-4o, gpt-4o-mini, text-embedding-ada-002, gpt-3.5-turbo, gpt-4
+gpt-4o, gpt-4o-mini, text-embedding-ada-002, gpt-4
 ```
 #### **Usage Examples:**
 - **Check multiple regions for default models**:
@@ -54,6 +56,8 @@ gpt-4o, gpt-4o-mini, text-embedding-ada-002, gpt-3.5-turbo, gpt-4
   ./quota_check_all_regions.sh
   ```
 #### **Sample Output**
+The output lists regions with model quotas (limit, used, available). Choose a region with sufficient quota.
+
 ![quota_check_all_regions_output](images/quota_check_all_regions_output.png)
 
 ---
