@@ -21,7 +21,7 @@ These values are pre-configured in the **Bicep template**. Ensure they meet your
 ### **1️⃣ `quota_check_params.sh` - Check Specific Models & Regions**
 ✔️ You can pass the **model name and required capacity** in the format:  
 ```sh
-gpt-4o-mini:30
+gpt-4o:30
 ```
 ✔️ **Multiple models** can be passed, separated by commas:  
 ```sh
