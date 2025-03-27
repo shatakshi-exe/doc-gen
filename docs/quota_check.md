@@ -8,6 +8,15 @@ Use one of the following scripts based on your needs:
 | **`quota_check_params.sh`**     | Check quota for **specific models & capacities** in a chosen region. |
 | **`quota_check_all_regions.sh`** | Check **quota across all Azure regions** for default models. |
 
+### **Default Quota Values**
+These values are pre-configured in the **Bicep template**. Ensure they meet your requirements before proceeding:  
+
+| **Model Type**      | **Deployment Type**   | **Model**                  | **Quota (Set in Bicep)** |
+|--------------------|--------------------|--------------------------|-------------------------|
+| **GPT**           | Global Standard    | gpt-4o                    | 30k                     |
+| **Text Embedding** | Standard          | text-embedding-ada-002    | 80k                     |
+
+
 ## Features
 ### **1️⃣ `quota_check_params.sh` - Check Specific Models & Regions**
 ✔️ You can pass the **model name and required capacity** in the format:  
@@ -16,7 +25,7 @@ gpt-4o-mini:30
 ```
 ✔️ **Multiple models** can be passed, separated by commas:  
 ```sh
-gpt-4o-mini:30,text-embedding-ada-002:20
+gpt-4o:30,text-embedding-ada-002:80
 ```
 ✔️ **Region is optional**:  
 - If no region is provided, the script checks in the following **default regions**:  
@@ -27,15 +36,15 @@ gpt-4o-mini:30,text-embedding-ada-002:20
 #### **Usage Examples**
 - **Check multiple models in a specific region**:
   ```
-  ./quota_check_params.sh gpt-4o-mini:30,text-embedding-ada-002:20 eastus
+  ./quota_check_params.sh gpt-4o:30,text-embedding-ada-002:80 eastus
   ```
 - **Check a single model without specifying a region** (uses default regions):
   ```
-  ./quota_check_params.sh gpt-4o-mini:30
+  ./quota_check_params.sh gpt-4o:30
   ```
 - **Check a single model in a specific region:**
   ```
-  ./quota_check_params.sh gpt-4o-mini:30 eastus
+  ./quota_check_params.sh gpt-4o:30 eastus
   ```
 #### **Sample Output**
 The final table lists regions with available quota for both GPT and text embedding models. You can select any of these regions for deployment.
