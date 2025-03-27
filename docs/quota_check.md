@@ -37,6 +37,8 @@ gpt-4o-mini:30,text-embedding-ada-002:20
   ```
   ./quota_check_params.sh gpt-4o-mini:30 eastus
   ```
+#### **Sample Output**
+![quota_check_params_output](images/quota_check_params_output.png)
 
 ### **2️⃣ `quota_check_all_regions.sh` - Check Across All Azure Regions**
 ✔️ No parameters required – it will automatically check quota availability in all Azure regions.
@@ -51,6 +53,8 @@ gpt-4o, gpt-4o-mini, text-embedding-ada-002, gpt-3.5-turbo, gpt-4
   ```
   ./quota_check_all_regions.sh
   ```
+#### **Sample Output**
+![quota_check_all_regions_output](images/quota_check_all_regions_output.png)
 
 ---
 ## **If using Azure Portal and Cloud Shell**
