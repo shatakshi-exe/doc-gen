@@ -3,8 +3,54 @@
 Before deploying the accelerator, **ensure sufficient quota availability** for the required model.  
 Use one of the following scripts based on your needs:  
 
-- **`quota_check_params.sh`** → If you **know the model and capacity** required.  
-- **`quota_check_all_regions.sh`** → If you **want to check available capacity across all regions** for supported models.  
+| Script                      | Use Case |
+|-----------------------------|------------------------------------------------|
+| **`quota_check_params.sh`**     | Check quota for **specific models & capacities** in a chosen region. |
+| **`quota_check_all_regions.sh`** | Check **quota across all Azure regions** for default models. |
+
+## Features
+### **1️⃣ `quota_check_params.sh` - Check Specific Models & Regions**
+✔️ You can pass the **model name and required capacity** in the format:  
+```sh
+gpt-4o-mini:30
+```
+✔️ **Multiple models** can be passed, separated by commas:  
+```sh
+gpt-4o-mini:30,text-embedding-ada-002:20
+```
+✔️ **Region is optional**:  
+- If no region is provided, the script checks in the following **default regions**:  
+  ```
+  eastus, uksouth, eastus2, northcentralus, swedencentral, westus, westus2, southcentralus, canadacentral
+  ```
+- If you want to check a **specific region**, pass it as a parameter.
+#### **Usage Examples**
+- **Check multiple models in a specific region**:
+  ```
+  ./quota_check_params.sh gpt-4o-mini:30,text-embedding-ada-002:20 eastus
+  ```
+- **Check a single model without specifying a region** (uses default regions):
+  ```
+  ./quota_check_params.sh gpt-4o-mini:30
+  ```
+- **Check a single model in a specific region:**
+  ```
+  ./quota_check_params.sh gpt-4o-mini:30 eastus
+  ```
+
+### **2️⃣ `quota_check_all_regions.sh` - Check Across All Azure Regions**
+✔️ No parameters required – it will automatically check quota availability in all Azure regions.
+
+✔️ It checks quota for the following default models:
+
+```sh
+gpt-4o, gpt-4o-mini, text-embedding-ada-002, gpt-3.5-turbo, gpt-4
+```
+#### **Usage Examples:**
+- **Check multiple regions for default models**:
+  ```
+  ./quota_check_all_regions.sh
+  ```
 
 ---
 ## **If using Azure Portal and Cloud Shell**
@@ -20,6 +66,7 @@ Use one of the following scripts based on your needs:
     chmod +x quota_check_params.sh
     ./quota_check_params.sh <model_name:capacity> [<model_region>] (e.g., gpt-4o-mini:30,text-embedding-ada-002:20 eastus)
     ```
+     - Refer to [Usage Examples](#usage-examples) for detailed commands.
 
    **To check available quota across all regions for supported models:**  
 
@@ -28,6 +75,7 @@ Use one of the following scripts based on your needs:
     chmod +x quota_check_all_regions.sh
     ./quota_check_all_regions.sh
     ```
+    - Refer to [Usage Examples](#usage-examples) for detailed commands.
     
 ## **If using VS Code or Codespaces**
 1. Open the terminal in VS Code or Codespaces.  
@@ -42,6 +90,7 @@ Use one of the following scripts based on your needs:
     ```sh
     ./quota_check_params.sh <model_name:capacity> [<model_region>] (e.g., gpt-4o-mini:30,text-embedding-ada-002:20 eastus)
     ```
+    - Refer to [Usage Examples](#usage-examples) for detailed commands.
 
    **To check available quota across all regions for supported models:**  
 
@@ -55,7 +104,3 @@ Use one of the following scripts based on your needs:
     az login
     ```
 5. Rerun the script after installing Azure CLI.
-   
-    **Parameters**
-    - `<model_name:capacity>`: The name and required capacity for each model, in the format model_name:capacity (**e.g., gpt-4o-mini:30,text-embedding-ada-002:20**).
-    - `[<model_region>] (optional)`: The Azure region to check first. If not provided, all supported regions will be checked (**e.g., eastus**).
