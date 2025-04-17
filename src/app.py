@@ -20,6 +20,8 @@ from backend.settings import (
 from backend.utils import (ChatType, format_as_ndjson,
                            format_non_streaming_response,
                            format_stream_response)
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential as AzureIdentityDefaultCredential
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
 
@@ -139,6 +141,21 @@ def init_openai_client():
         azure_openai_client = None
         raise e
 
+def init_ai_foundry_client():
+    ai_foundry_client = None
+    try:
+        project_conn_string = app_settings.azure_openai.project_conn_string
+        ai_foundry_project = AIProjectClient.from_connection_string(
+            conn_str = project_conn_string,
+            credential = AzureIdentityDefaultCredential(),
+        )
+        ai_foundry_client = ai_foundry_project.inference.get_chat_completions_client()
+        return ai_foundry_client
+    except Exception as e:
+        logging.exception("Exception in AI Foundry initialization", e)
+        ai_foundry_client = None
+        raise e
+        
 
 def init_ai_search_client():
     client = None
@@ -301,14 +318,25 @@ async def send_chat_request(request_body, request_headers):
     model_args = prepare_model_args(request_body, request_headers)
 
     try:
-        azure_openai_client = init_openai_client()
-        raw_response = (
-            await azure_openai_client.chat.completions.with_raw_response.create(
-                **model_args
+        if app_settings.base_settings.use_ai_foundry_sdk:
+            ai_foundry_client = init_ai_foundry_client()
+            print("before response")
+            raw_response = ai_foundry_client.complete(
+                model=model_args["model"],
+                messages=model_args["messages"]
             )
-        )
-        response = raw_response.parse()
-        apim_request_id = raw_response.headers.get("apim-request-id")
+            print(raw_response)
+            response = raw_response.choices[0].message.content
+            apim_request_id = ""
+        else:
+            azure_openai_client = init_openai_client()
+            raw_response = (
+                await azure_openai_client.chat.completions.with_raw_response.create(
+                    **model_args
+                )
+            )
+            response = raw_response.parse()
+            apim_request_id = raw_response.headers.get("apim-request-id")
     except Exception as e:
         logging.exception("Exception in send_chat_request")
         raise e
