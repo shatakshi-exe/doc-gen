@@ -270,7 +270,7 @@ jobs:
           for VAULT in "${VAULTS[@]}"; do
             echo "Checking location for Key Vault: $VAULT"
 
-            # Fetch Key Vault location
+            # Fetch Key Vault location..
             VAULT_LOCATION=$(az keyvault list-deleted --query "[?name=='$VAULT'].properties.location" -o tsv 2>/dev/null || echo "")
 
             if [ -n "$VAULT_LOCATION" ]; then
