@@ -128,7 +128,7 @@ jobs:
         run: |
           echo "Fetching AI Services and Key Vault names before deletion..."
           
-          # Get Key Vault name
+          # Get Key Vault name.
           KEYVAULT_NAME=$(az resource list --resource-group "${{ env.RESOURCE_GROUP_NAME }}" --resource-type "Microsoft.KeyVault/vaults" --query "[].name" -o tsv)
           echo "Detected Key Vault: $KEYVAULT_NAME"
           echo "KEYVAULT_NAME=$KEYVAULT_NAME" >> $GITHUB_ENV
@@ -270,7 +270,7 @@ jobs:
           for VAULT in "${VAULTS[@]}"; do
             echo "Checking location for Key Vault: $VAULT"
 
-            # Fetch Key Vault location
+            # Fetch Key Vault location..
             VAULT_LOCATION=$(az keyvault list-deleted --query "[?name=='$VAULT'].properties.location" -o tsv 2>/dev/null || echo "")
 
             if [ -n "$VAULT_LOCATION" ]; then
