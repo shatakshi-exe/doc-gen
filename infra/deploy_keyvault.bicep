@@ -36,7 +36,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
     enabledForDiskEncryption: true
     enabledForTemplateDeployment: true
     enableRbacAuthorization: true
-    enablePurgeProtection: false
+    // enablePurgeProtection: false
     publicNetworkAccess: 'enabled'
     // networkAcls: {
     //   bypass: 'AzureServices'
