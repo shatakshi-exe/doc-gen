@@ -14,6 +14,7 @@ const Document = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false); // Step 1
 
+  const x = 12/0;
   useEffect(() => {
     const getDocument = async (id: string) => {
       setIsLoading(true); // Step 2
