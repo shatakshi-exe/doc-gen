@@ -54,7 +54,7 @@ jobs:
             echo "int_registry=${{ secrets.ACR_DEV_LOGIN_SERVER }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Determine Tag Name Based on Branch
+      - name: Determine Tag Name Based on Branchh
         id: determine_tag
         run: |
           if [[ "${{ github.ref_name }}" == "main" ]]; then
