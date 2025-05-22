@@ -34,7 +34,7 @@ export async function conversationApi(
 export async function getUserInfo(): Promise<UserInfo[]> {
   const response = await fetch('/.auth/me')
   if (!response.ok) {
-    console.log('No identity provider found. Access to chat will be blocked.')
+    console.log('No identity provider found. Access to chat will be blocked. ')
     return []
   }
 
