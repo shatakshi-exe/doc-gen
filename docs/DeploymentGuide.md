@@ -107,6 +107,7 @@ When you start the deployment, most parameters will have **default values**, but
 | **GPT Model Deployment Capacity** | Configure capacity for **GPT models**. | 30k |
 | **Embedding Model** | Default: **text-embedding-ada-002**. |  text-embedding-ada-002 |
 | **Embedding Model Capacity** | Set the capacity for **embedding models**. |  80k |
+| **Existing Log analytics workspace** | To reuse the existing Log analytics workspace Id. |  |
 
 </details>
 
@@ -159,7 +160,7 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
     ```
     If you don't have azd env then you need to pass parameters along with the command. Then the command will look like the following:
     ```shell 
-    bash ./infra/scripts/process_sample_data.sh <Storage-Account-name> <Storgae-Account-container-name> <Key-Vault-name> <CosmosDB-Account-name> <Resource-Group-name>
+    bash ./infra/scripts/process_sample_data.sh <Storage-Account-name> <Storage-Account-container-name> <Key-Vault-name> <CosmosDB-Account-name> <Resource-Group-name>
     ```
 
 6. Open the [Azure Portal](https://portal.azure.com/), go to the deployed resource group, find the App Service and get the app URL from `Default domain`.
