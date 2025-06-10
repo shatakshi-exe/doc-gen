@@ -4,6 +4,9 @@ SUBSCRIPTION_ID=""
 LOCATION=""
 MODELS_PARAMETER=""
 
+ALL_REGIONS=('australiaeast' 'eastus2' 'francecentral' 'japaneast' 'norwayeast' 'swedencentral' 'uksouth' 'westus')
+
+# Parse command-line arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --subscription)
@@ -25,64 +28,92 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Verify all required parameters are provided and echo missing ones
+# Validate inputs
 MISSING_PARAMS=()
+[[ -z "$SUBSCRIPTION_ID" ]] && MISSING_PARAMS+=("subscription")
+[[ -z "$LOCATION" ]] && MISSING_PARAMS+=("location")
+[[ -z "$MODELS_PARAMETER" ]] && MISSING_PARAMS+=("models-parameter")
 
-if [[ -z "$SUBSCRIPTION_ID" ]]; then
-    MISSING_PARAMS+=("subscription")
-fi
-
-if [[ -z "$LOCATION" ]]; then
-    MISSING_PARAMS+=("location")
-fi
-
-if [[ -z "$MODELS_PARAMETER" ]]; then
-    MISSING_PARAMS+=("models-parameter")
-fi
-
-if [[ ${#MISSING_PARAMS[@]} -ne 0 ]]; then
-    echo "❌ ERROR: Missing required parameters: ${MISSING_PARAMS[*]}"
-    echo "Usage: $0 --subscription <SUBSCRIPTION_ID> --location <LOCATION> --models-parameter <MODELS_PARAMETER>"
-    exit 1
-fi
-
-aiModelDeployments=$(jq -c ".parameters.$MODELS_PARAMETER.value[]" ./infra/main.parameters.json)
-
-if [ $? -ne 0 ]; then
-  echo "Error: Failed to parse main.parameters.json. Ensure jq is installed and the JSON file is valid."
+if [[ ${#MISSING_PARAMS[@]} -gt 0 ]]; then
+  echo "❌ ERROR: Missing parameters: ${MISSING_PARAMS[*]}"
   exit 1
 fi
 
-az account set --subscription "$SUBSCRIPTION_ID"
+az account set --subscription "$SUBSCRIPTION_ID" || exit 1
 echo "🎯 Active Subscription: $(az account show --query '[name, id]' --output tsv)"
 
-quotaAvailable=true
+aiModelDeployments=$(jq -c ".parameters.$MODELS_PARAMETER.value[]" ./infra/main.parameters.json)
 
-while IFS= read -r deployment; do
-  name=$(echo "$deployment" | jq -r '.name')
-  model=$(echo "$deployment" | jq -r '.model.name')
-  type=$(echo "$deployment" | jq -r '.sku.name')
-  capacity=$(echo "$deployment" | jq -r '.sku.capacity')
+declare -A regionAvailabilityMap
+declare -a fallbackRegions
+printf -- "-----------------------------------------------------------------------------------------------\n"
+printf "%-4s | %-15s | %-40s | %-6s | %-6s | %-9s\n" "No." "Region" "Model Name" "Limit" "Used" "Available"
+printf -- "-----------------------------------------------------------------------------------------------\n"
 
-  echo "🔍 Validating model deployment: $name ..."
-    ./infra/scripts/validate_model_quota.sh --location "$LOCATION" --model "$model" --capacity $capacity --deployment-type $type
+region_idx=1
 
-  # Check if the script failed
-  exit_code=$?
-  if [ $exit_code -ne 0 ]; then
-      if [ $exit_code -eq 2 ]; then
-          quotaAvailable=false
+for region in "${ALL_REGIONS[@]}"; do
+  allModelsFit=true
+  regionPrinted=false
+
+  while IFS= read -r deployment; do
+    model=$(echo "$deployment" | jq -r '.model.name')
+    type=$(echo "$deployment" | jq -r '.sku.name')
+    capacity=$(echo "$deployment" | jq -r '.sku.capacity')
+
+    result=$(./infra/scripts/validate_model_quota.sh --location "$region" --model "$model" --deployment-type "$type")
+
+    if echo "$result" | jq -e 'has("error")' > /dev/null; then
+      echo "⚠️  $(echo "$result" | jq -r '.model') not found in region $region"
+      allModelsFit=false
+    else
+      modelType=$(echo "$result" | jq -r '.model')
+      used=$(echo "$result" | jq -r '.used')
+      limit=$(echo "$result" | jq -r '.limit')
+      available=$(echo "$result" | jq -r '.available')
+
+      if ! $regionPrinted; then
+        printf "%-4s | %-15s | %-40s | %-6s | %-6s | %-9s\n" "$region_idx" "$region" "$modelType" "$limit" "$used" "$available"
+        regionPrinted=true
       else
-          echo "❌ ERROR: Quota validation failed for model deployment: $name"
-          quotaAvailable=false
+        printf "     | %-15s | %-40s | %-6s | %-6s | %-9s\n" "" "$modelType" "$limit" "$used" "$available"
       fi
-  fi
-done <<< "$(echo "$aiModelDeployments")"
 
-if [ "$quotaAvailable" = false ]; then
-    echo "❌ ERROR: One or more model deployments failed validation."
-    exit 1
+      [[ "$available" -lt "$capacity" ]] && allModelsFit=false
+    fi
+  done <<< "$aiModelDeployments"
+
+  if $regionPrinted; then
+    printf -- "-----------------------------------------------------------------------------------------------\n"
+  fi
+
+  if $allModelsFit; then
+    regionAvailabilityMap["$region"]="true"
+    [[ "$region" != "$LOCATION" ]] && fallbackRegions+=("$region")
+  fi
+
+  ((region_idx++))
+done
+
+# Result Evaluation
+if [[ "${regionAvailabilityMap[$LOCATION]}" == "true" ]]; then
+  echo "✅ Sufficient quota is available for all models in the selected region: $LOCATION"
+  exit 0
 else
-    echo "✅ All model deployments passed quota validation successfully."
-    exit 0
+  echo -e "\n❌ The selected region '$LOCATION' does not have sufficient quota for all required models."
+  if [[ ${#fallbackRegions[@]} -gt 0 ]]; then
+    echo "➡️  You can try using one of the following regions where all models have sufficient quota:"
+    for fallback in "${fallbackRegions[@]}"; do
+      echo "   • $fallback"
+    done
+    echo -e "\n🔧 To proceed, run:"
+    echo "    azd env set AZURE_ENV_OPENAI_LOCATION '<region>'"
+    echo "📌 To confirm it's set correctly, run:"
+    echo "    azd env get-value AZURE_ENV_OPENAI_LOCATION"
+    echo "▶️  Once confirmed, re-run azd up to deploy the model in the new region."
+    exit 2
+  else
+    echo "❌ No fallback regions found with sufficient quota for all models."
+  fi
+  exit 1
 fi
