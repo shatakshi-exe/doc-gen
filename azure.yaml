@@ -26,6 +26,20 @@ deployment:
     baseUrl: ${parameters.baseUrl}
 
 hooks:
+  preprovision:
+    posix:
+      shell: sh
+      run: >
+        ./infra/scripts/validate_model_quota.sh --subscription "$AZURE_SUBSCRIPTION_ID" --location "${AZURE_LOCATION:-swedencentral}" --models-parameter "aiModelDeployments"
+      interactive: false
+      continueOnError: false
+    windows:
+      shell: pwsh
+      run: >
+        $location = if ($env:AZURE_LOCATION) { $env:AZURE_LOCATION } else { "swedencentral" };
+        ./infra/scripts/validate_model_deployment_quotas.ps1 -SubscriptionId $env:AZURE_SUBSCRIPTION_ID -Location $location -ModelsParameter "aiModelDeployments"
+      interactive: false
+      continueOnError: false
   postprovision:
     windows:
       run: |
