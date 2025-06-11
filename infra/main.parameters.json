@@ -10,16 +10,6 @@
             "name": "gpt-4o"
           },
           "sku": {
-            "name": "Standard",
-            "capacity": 30
-          }
-        },
-        {
-          "name": "gpt4o",
-          "model": {
-            "name": "gpt-4o"
-          },
-          "sku": {
             "name": "GlobalStandard",
             "capacity": 30
           }
@@ -33,8 +23,17 @@
             "name": "Standard",
             "capacity": 80
           }
+        },
+        {
+          "name": "gpt4o",
+          "model": {
+            "name": "gpt-4o"
+          },
+          "sku": {
+            "name": "Standard",
+            "capacity": 30
+          }
         }
-        
       ]
     }
   }

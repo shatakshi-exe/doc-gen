@@ -4,59 +4,85 @@ SUBSCRIPTION_ID=""
 LOCATION=""
 MODELS_PARAMETER=""
 
-ALL_REGIONS=('australiaeast' 'eastus2' 'francecentral' 'japaneast' 'norwayeast' 'swedencentral' 'uksouth' 'westus')
-
-# Parse command-line arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --subscription)
+    --Subscription)
       SUBSCRIPTION_ID="$2"
       shift 2
       ;;
-    --location)
+    --Location)
       LOCATION="$2"
       shift 2
       ;;
-    --models-parameter)
+    --ModelsParameter)
       MODELS_PARAMETER="$2"
       shift 2
       ;;
     *)
-      echo "Unknown option: $1"
+      echo "❌ ERROR: Unknown option: $1"
       exit 1
       ;;
   esac
 done
 
-# Validate inputs
-MISSING_PARAMS=()
-[[ -z "$SUBSCRIPTION_ID" ]] && MISSING_PARAMS+=("subscription")
-[[ -z "$LOCATION" ]] && MISSING_PARAMS+=("location")
-[[ -z "$MODELS_PARAMETER" ]] && MISSING_PARAMS+=("models-parameter")
+AIFOUNDRY_NAME="${AZURE_AIFOUNDRY_NAME}"
+RESOURCE_GROUP="${AZURE_RESOURCE_GROUP}"
 
-if [[ ${#MISSING_PARAMS[@]} -gt 0 ]]; then
-  echo "❌ ERROR: Missing parameters: ${MISSING_PARAMS[*]}"
+# Validate required parameters
+MISSING_PARAMS=()
+[[ -z "$SUBSCRIPTION_ID" ]] && MISSING_PARAMS+=("SubscriptionId")
+[[ -z "$LOCATION" ]] && MISSING_PARAMS+=("Location")
+[[ -z "$MODELS_PARAMETER" ]] && MISSING_PARAMS+=("ModelsParameter")
+[[ -z "$RESOURCE_GROUP" ]] && MISSING_PARAMS+=("AZURE_RESOURCE_GROUP")
+
+if [[ ${#MISSING_PARAMS[@]} -ne 0 ]]; then
+  echo "❌ ERROR: Missing required parameters: ${MISSING_PARAMS[*]}"
+  echo "Usage: $0 --SubscriptionId <SUBSCRIPTION_ID> --Location <LOCATION> --ModelsParameter <MODELS_PARAMETER>"
   exit 1
 fi
 
-az account set --subscription "$SUBSCRIPTION_ID" || exit 1
+# If AI Foundry already exists, skip quota validation
+existing=$(az cognitiveservices account show --name "$AIFOUNDRY_NAME" --resource-group "$RESOURCE_GROUP" --query "name" --output tsv 2>/dev/null)
+if [[ -n "$existing" ]]; then
+  echo "✅ AI Foundry '$AIFOUNDRY_NAME' exists. ⏭️ Skipping quota validation."
+  exit 0
+else
+  echo "❌ AI Foundry '$AIFOUNDRY_NAME' not found. Proceeding with quota validation..."
+fi
+
+# Load model deployments
+aiModelDeployments=$(jq -c ".parameters.$MODELS_PARAMETER.value[]" ./infra/main.parameters.json)
+if [[ $? -ne 0 ]]; then
+  echo "❌ ERROR: Failed to parse main.parameters.json. Ensure jq is installed and the JSON is valid."
+  exit 1
+fi
+
+az account set --subscription "$SUBSCRIPTION_ID"
 echo "🎯 Active Subscription: $(az account show --query '[name, id]' --output tsv)"
 
-aiModelDeployments=$(jq -c ".parameters.$MODELS_PARAMETER.value[]" ./infra/main.parameters.json)
+ALL_REGIONS=('australiaeast' 'eastus2' 'francecentral' 'japaneast' 'norwayeast' 'swedencentral' 'uksouth' 'westus')
 
 declare -A regionAvailabilityMap
 declare -a fallbackRegions
-printf -- "-----------------------------------------------------------------------------------------------\n"
-printf "%-4s | %-15s | %-40s | %-6s | %-6s | %-9s\n" "No." "Region" "Model Name" "Limit" "Used" "Available"
+
+# Prioritize selected location first
+REGIONS_TO_CHECK=("$LOCATION")
+for r in "${ALL_REGIONS[@]}"; do
+  [[ "$r" != "$LOCATION" ]] && REGIONS_TO_CHECK+=("$r")
+done
+
+# Header
+printf "\n%-4s | %-15s | %-40s | %-6s | %-6s | %-9s\n" "No." "Region" "Model Name" "Limit" "Used" "Available"
 printf -- "-----------------------------------------------------------------------------------------------\n"
 
 region_idx=1
 
-for region in "${ALL_REGIONS[@]}"; do
+for region in "${REGIONS_TO_CHECK[@]}"; do
   allModelsFit=true
   regionPrinted=false
 
   while IFS= read -r deployment; do
+    name=$(echo "$deployment" | jq -r '.name')
     model=$(echo "$deployment" | jq -r '.model.name')
     type=$(echo "$deployment" | jq -r '.sku.name')
     capacity=$(echo "$deployment" | jq -r '.sku.capacity')
@@ -89,31 +115,31 @@ for region in "${ALL_REGIONS[@]}"; do
 
   if $allModelsFit; then
     regionAvailabilityMap["$region"]="true"
-    [[ "$region" != "$LOCATION" ]] && fallbackRegions+=("$region")
+    if [[ "$region" == "$LOCATION" ]]; then
+      echo "✅ Sufficient quota is available in selected region: $LOCATION"
+      exit 0
+    else
+      fallbackRegions+=("$region")
+    fi
   fi
 
   ((region_idx++))
 done
 
-# Result Evaluation
-if [[ "${regionAvailabilityMap[$LOCATION]}" == "true" ]]; then
-  echo "✅ Sufficient quota is available for all models in the selected region: $LOCATION"
-  exit 0
+# Fallback result
+echo -e "\n❌ The selected region '$LOCATION' does not have sufficient quota for all required models."
+if [[ ${#fallbackRegions[@]} -gt 0 ]]; then
+  echo "➡️  You can try using one of the following regions where all models have sufficient quota:"
+  for fallback in "${fallbackRegions[@]}"; do
+    echo "   • $fallback"
+  done
+  echo -e "\n🔧 To proceed, run:"
+  echo "    azd env set AZURE_ENV_OPENAI_LOCATION '<region>'"
+  echo "📌 To confirm it's set correctly, run:"
+  echo "    azd env get-value AZURE_ENV_OPENAI_LOCATION"
+  echo "▶️  Once confirmed, re-run azd up to deploy the model in the new region."
+  exit 2
 else
-  echo -e "\n❌ The selected region '$LOCATION' does not have sufficient quota for all required models."
-  if [[ ${#fallbackRegions[@]} -gt 0 ]]; then
-    echo "➡️  You can try using one of the following regions where all models have sufficient quota:"
-    for fallback in "${fallbackRegions[@]}"; do
-      echo "   • $fallback"
-    done
-    echo -e "\n🔧 To proceed, run:"
-    echo "    azd env set AZURE_ENV_OPENAI_LOCATION '<region>'"
-    echo "📌 To confirm it's set correctly, run:"
-    echo "    azd env get-value AZURE_ENV_OPENAI_LOCATION"
-    echo "▶️  Once confirmed, re-run azd up to deploy the model in the new region."
-    exit 2
-  else
-    echo "❌ No fallback regions found with sufficient quota for all models."
-  fi
+  echo "❌ No fallback regions found with sufficient quota for all models."
   exit 1
 fi
