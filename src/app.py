@@ -25,6 +25,9 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
+from cosmos_query_runner import cosmos_query_runner, format_cosmos_results
+from llm_enhancer import llm_enhancer
+
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
 
 # Check if the Application Insights Instrumentation Key is set in the environment variables
@@ -1091,6 +1094,48 @@ async def generate_section_content():
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return jsonify({"error": str(e)}), 500
 
+@bp.route("/generate_report", methods=["POST"])
+async def generate_report():
+    """
+    Generate a VBE summary report using Cosmos DB and AI Search.
+    """
+    try:
+        # Parse user input
+        request_json = await request.get_json()
+        user_input = request_json.get("input", "")
+        if not user_input:
+            return jsonify({"error": "Input is required"}), 400
+
+        # Extract opco, quarter, and year from user input
+        opco, quarter, year = extract_opco_quarter_year(user_input)
+        if not opco or not quarter or not year:
+            return jsonify({"error": "Invalid input format"}), 400
+
+        # Query Cosmos DB
+        cosmos_query = f"SELECT * FROM c WHERE c.opco = '{opco}' AND c.engagement_quarter = '{quarter}' AND c.engagement_year = '{year}'"
+        cosmos_results = cosmos_query_runner(cosmos_query)
+        cosmos_data = format_cosmos_results(cosmos_results)
+
+        # Query AI Search
+        search_query = f"opco eq '{opco}' AND engagement_quarter eq '{quarter}' AND engagement_year eq '{year}'"
+        search_client = init_ai_search_client()
+        search_results = search_client.search(search_query)
+        search_data = [result for result in search_results]
+
+        # Generate report using Azure OpenAI
+        report = llm_enhancer(opco, quarter, year, cosmos_data, search_data)
+
+        return jsonify({"report": report}), 200
+
+    except Exception as e:
+        logging.exception("Exception in /generate_report")
+        span = trace.get_current_span()
+        if span is not None:
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+        return jsonify({"error": str(e)}), 500
+    
+
 
 @bp.route("/document/<filepath>")
 async def get_document(filepath):
@@ -1188,5 +1233,70 @@ def retrieve_document(filepath):
             span.set_status(Status(StatusCode.ERROR, str(e)))
         raise e
 
+
+def extract_opco_quarter_year(user_input):
+    """
+    Extract opco, quarter, and year from user input.
+    """
+    try:
+        # Example input: "Generate a VBE summary report for BGE Q2 2024"
+        parts = user_input.split("for")[-1].strip().split()
+        opco = parts[0]
+        quarter = parts[1]
+        year = parts[2]
+        return opco, quarter, year
+    except Exception:
+        return None, None, None
+    
+def generate_vbe_report(opco, quarter, year, cosmos_data, search_data):
+    """
+    Generate a VBE summary report using Cosmos DB and AI Search data.
+    """
+    try:
+        # Initialize Azure OpenAI client
+        llm = init_openai_client()
+
+        # Prepare data for analysis
+        cosmos_topics = cosmos_data.get("results", [])
+        search_topics = search_data
+
+        # Build prompt for Azure OpenAI
+        prompt = f"""
+        Generate a VBE summary report for the following data:
+        OPCO: {opco}
+        QUARTER: {quarter}
+        YEAR: {year}
+
+        Cosmos DB Topics:
+        {json.dumps(cosmos_topics, indent=2)}
+
+        AI Search Topics:
+        {json.dumps(search_topics, indent=2)}
+
+        Format the report as follows:
+        OPCO QUARTER YEAR
+        - Topic 1 (EU Common Questions) (majority and minority sentiment analysis for the topic)
+        - Each of the 4 questions under Topic 1 (majority and minority sentiment analysis for each question)
+        - Topic 2
+        - Questions under Topic 2
+        - Topic 3
+        - Questions under Topic 3
+
+        """
+
+        # Generate report using Azure OpenAI
+        response = llm.chat.completions.create(
+            model=app_settings.azure_openai.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=1000,
+        )
+
+        report = response.choices[0].message.content.strip()
+        return report
+
+    except Exception as e:
+        logging.exception("Exception in generate_vbe_report")
+        return f"Error generating report: {str(e)}"
 
 app = create_app()
